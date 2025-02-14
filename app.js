@@ -38,6 +38,7 @@ app.use(routes);
 // логгер ошибок
 app.use(errorLogger);
 
+// вфывф
 // обработка ошибок celebrate
 app.use(errors());
 
