@@ -3,7 +3,13 @@ const router = require('express').Router();
 
 // const { validSetCreateMovies, validSetDelMovies } = require('../middlewares/validSets');
 // const { getMovies, createMovies, deleteMovies } = require('../controllers/payment');
-const { getClients, createClient, deleteClient, patchClient, getClientId } = require('../controllers/clients');
+const {
+  getClients,
+  createClient,
+  deleteClient,
+  patchClient,
+  getClientId,
+} = require('../controllers/clients');
 
 router.get('/', getClients); // — показать всех клиентов
 router.get('/:id', /* celebrate(validSetCreateMovies), */ getClientId); // — добавить нового клиента

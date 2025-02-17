@@ -33,14 +33,10 @@ function getDeveloperId(req, res, next) {
       if (!foundDeveloper) {
         throw new NotFoundErr(errMes.notDeveloperId);
       }
-      return res.status(200).send(foundDeveloper)
+      return res.status(200).send(foundDeveloper);
     })
     .catch(next);
 }
-
-
-
-
 
 // *********************************************************
 // *** addUserToContractor - добавить в группу пользователя ***

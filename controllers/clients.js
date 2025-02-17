@@ -5,8 +5,7 @@ const { errMes, message } = require('../utils/constants');
 const NotFoundErr = require('../errors/notFound');
 const BadRequestErr = require('../errors/badRequest');
 
-
-// Создайте универсальную функцию для обработки ошибок
+// Универсальную функцию для обработки ошибок
 function handleError(err, next) {
   if (err.name === 'CastError' || err.name === 'ValidationError') {
     return next(new BadRequestErr(errMes.incorrectData));

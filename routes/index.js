@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { celebrate } = require('celebrate');
 const routeUser = require('./users');
+const routeCompanies = require('./companies');
 // const routePayments = require('./payments');
 //
 const routeClients = require('./clients');
@@ -21,6 +22,8 @@ router.use(auth);
 
 // Эти роуты закрытые авторизацией
 router.use('/users', routeUser);
+router.use('/companies', routeCompanies);
+
 // router.use('/payments', routePayments);
 //
 router.use('/clients', routeClients); // клиенты

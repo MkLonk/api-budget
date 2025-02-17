@@ -9,6 +9,8 @@ const errMes = {
   //
   notEnoughRights: 'У Вас не достаточно прав для этого действия.',
   //
+  notCompanyInn: 'Ошибка! Нет ИНН, или он введен не правильно',
+  notCompanyId: 'Нет компинии с таким id', //+++
   notClients: 'Нет клиентов', //+++
   notClientId: 'Нет клиента с таким id', //+++
   valuesNotChanged: 'Ошибка! Переданные значения полей остались прежними (были не были изменены).',
@@ -38,6 +40,7 @@ const message = {
   delProjectSections: 'Раздел проекта удален', // +++
   delProjectWork: 'проектные работы уделены', // ++++
   delSalary: 'Заработная плата удалена', // +++
+  // notCompanyInn: 'Нет компинии с таким ИНН',
 };
 
 module.exports = { errMes, message };
