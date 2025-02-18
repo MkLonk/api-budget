@@ -3,6 +3,7 @@
 const Company = require('../models/company');
 const NotFoundErr = require('../errors/notFound');
 const BadRequestErr = require('../errors/badRequest');
+const ForbiddenErr = require('../errors/forbidden');
 const { errMes } = require('../utils/constants');
 
 function handleError(err, next) {
@@ -91,11 +92,26 @@ function updateCompany(req, res, next) {
 
 // Удаление компании
 function deleteCompany(req, res, next) {
+  // Предполагается, что ID пользователя передается через middleware аутентификации
+  const { userId } = req.user;
   const { companyId } = req.params;
 
-  Company.findByIdAndDelete(companyId)
+  Company.findById(companyId)
     .orFail(() => new NotFoundErr('Компания не найдена'))
-    .then(() => res.status(200).send({ message: 'Компания успешно удалена' }))
+    .then((company) => {
+      // Проверяем, является ли текущий пользователь владельцем компании
+      if (company.owner.toString() !== userId) {
+        // Используем Promise.reject для передачи ошибки в .catch
+        return Promise.reject(new ForbiddenErr(errMes.notEnoughRights));
+      }
+
+      // Если пользователь является владельцем, выполняем удаление
+      return Company.findByIdAndDelete(companyId);
+    })
+    .then(() => {
+      res.status(200).send({ message: 'Компания успешно удалена' });
+    })
+    // Передаем ошибку в middleware обработки ошибок
     .catch(next);
 }
 
@@ -180,6 +196,16 @@ function removeUserFromCompany(req, res, next) {
   return Company.findById(companyId)
     .orFail(() => new NotFoundErr('Компания не найдена'))
     .then(async (existingCompany) => {
+      // Проверяем, есть ли пользователь с указанным ID среди участников
+      const userExists = existingCompany.members.some(
+        (member) => member.user_id.toString() === userId,
+      );
+
+      // Если пользователя нет, возвращаем ошибку
+      if (!userExists) {
+        return next(new BadRequestErr('Пользователь не является участником компании'));
+      }
+
       // Создаем копию объекта company, чтобы избежать мутации
       const updatedCompany = {
         ...existingCompany.toObject(), // Преобразуем Mongoose документ в обычный объект
@@ -190,6 +216,8 @@ function removeUserFromCompany(req, res, next) {
 
       // Сохраняем изменения
       await Company.findByIdAndUpdate(companyId, updatedCompany, { new: true });
+
+      // Возвращаем успешный ответ
       return res.status(200).send({ message: 'Пользователь успешно удален из компании' });
     })
     .catch(next);

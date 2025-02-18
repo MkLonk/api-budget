@@ -37,13 +37,49 @@ function patchMe(req, res, next) {
     .catch(next);
 }
 
-// создаёт пользователя
+// создаёт пользователя и возвращает токен
+function createUser(req, res, next) {
+  const { email, password } = req.body;
+
+  // Хешируем пароль
+  bcrypt.hash(password, Number(SALT_ROUNDS))
+    .then((hashPass) => User.create({ email, password: hashPass }))
+    .then((user) => {
+      // Удаляем хеш пароля из ответа (он не должен передаваться клиенту)
+      const { _id } = user;
+
+      // Создаем JWT-токен
+      const token = jwt.sign(
+        { _id },
+        NODE_ENV === 'production' ? JWT_SECRET : 'some-secret-key',
+        { expiresIn: '7d' },
+      );
+
+      // Возвращаем токен, ID пользователя и email
+      res.status(201).send({
+        userId: _id,
+        email: user.email,
+        token,
+      });
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestErr('Переданы некорректные данные при создании пользователя'));
+      } else if (err.code === 11000) {
+        next(new ConflictErr('Пользователь с таким email уже зарегистрирован'));
+      } else {
+        next(err);
+      }
+    });
+}
+
+/* // создаёт пользователя
 function createUser(req, res, next) {
   const { email, password } = req.body;
 
   bcrypt.hash(password, Number(SALT_ROUNDS)) // хешируем пароль
     .then((hashPass) => User.create({ email, password: hashPass }))
-    .then(() => res.status(201).send({ message: `Email: ${email} зерагистрирован` })) // .send({ data: { email } }))
+    .then(() => res.status(201).send({ message: `Email: ${email} зерагистрирован` }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestErr(errMes.incorrectData));
@@ -53,7 +89,7 @@ function createUser(req, res, next) {
         next(err);
       }
     });
-}
+} */
 
 // контроллер login для аутентификации пользователя +
 function login(req, res, next) {
