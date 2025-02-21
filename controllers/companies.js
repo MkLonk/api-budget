@@ -5,6 +5,7 @@ const NotFoundErr = require('../errors/notFound');
 const BadRequestErr = require('../errors/badRequest');
 const ForbiddenErr = require('../errors/forbidden');
 const { errMes } = require('../utils/constants');
+// const { log } = require('winston');
 
 function handleError(err, next) {
   if (err.name === 'CastError' || err.name === 'ValidationError') {
@@ -22,8 +23,23 @@ function checkInn(req, res, next) {
   }
 
   return Company.find({ inn })
+    .populate({
+      path: 'owner', // Подгружаем данные о владельце
+      select: 'email', // Выбираем только поле email
+    })
     .orFail(() => new NotFoundErr('Компании с указанным ИНН не найдены'))
-    .then((companies) => res.status(200).send(companies))
+    // .orFail(() => res.status(200).send('Компании с указанным ИНН не найдены'))
+    // .then((companies) => res.status(200).send(companies))
+    .then((companies) => {
+      // Форматируем результат, оставляя только нужные поля
+      const formattedCompanies = companies.map((company) => ({
+        _id: company._id,
+        name: company.name,
+        ownerEmail: company.owner.email, // Email владельца
+      }));
+
+      res.status(200).send(formattedCompanies); // Отправляем отформатированный список компаний
+    })
     .catch(next);
 }
 
@@ -40,7 +56,6 @@ function getCompanyById(req, res, next) {
 
 // Создание новой компании и назначение пользователя как owner
 function createCompany(req, res, next) {
-  // const allowedFields = ['name', 'inn', 'userId'];
   const { name, inn, userId } = req.body;
 
   if (!name || !userId) {
@@ -223,6 +238,44 @@ function removeUserFromCompany(req, res, next) {
     .catch(next);
 }
 
+// Возвращает все компании, в которых состоит пользователь, и его роль в каждой компании
+function getCompaniesByUser(req, res, next) {
+  const userId = req.user._id; // ID текущего пользователя
+
+  Company.find({ 'members.user_id': userId }) // Ищем компании, где пользователь есть в массиве members
+    .populate('owner members.user_id') // Подгружаем данные о владельце и участниках
+    .then((companies) => {
+      // Фильтруем и форматируем результаты, добавляя роль пользователя
+      const userCompanies = companies
+        .map((company) => {
+          // Находим роль пользователя в текущей компании
+
+          const userRoleMember = company
+            .members.find((member) => member.user_id._id.toString() === userId);
+
+          if (!userRoleMember) {
+            return null; // Пропускаем компанию, если пользователь не найден
+          }
+
+          return {
+            _id: company._id,
+            name: company.name,
+            inn: company.inn,
+            role: userRoleMember.role, // Роль пользователя в компании
+          };
+        })
+        .filter(Boolean); // Удаляем null из результата
+
+      res.status(200).send(userCompanies); // Отправляем отформатированный список компаний
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        return next(new BadRequestErr('Некорректный формат ID пользователя'));
+      }
+      return next(err);
+    });
+}
+
 module.exports = {
   checkInn,
   getCompanyById,
@@ -232,4 +285,5 @@ module.exports = {
   joinCompanyAsGuest,
   updateUserRole,
   removeUserFromCompany,
+  getCompaniesByUser,
 };

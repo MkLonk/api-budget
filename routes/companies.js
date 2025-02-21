@@ -9,6 +9,7 @@ const {
   joinCompanyAsGuest,
   updateUserRole,
   removeUserFromCompany,
+  getCompaniesByUser,
 } = require('../controllers/companies');
 
 // Проверка ИНН и получения компаний с таким ИНН
@@ -34,5 +35,8 @@ router.patch('/:companyId/userPatch', updateUserRole);
 
 // Удаление пользователя из компании
 router.patch('/:companyId/userDelete', removeUserFromCompany);
+
+// Получение всех компаний, в которых состоит пользователь
+router.get('/', getCompaniesByUser);
 
 module.exports = router;
